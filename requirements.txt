@@ -1,0 +1,2 @@
+Flask==1.1.2
+memoization==0.3.1
