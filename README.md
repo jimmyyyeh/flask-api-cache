@@ -12,6 +12,11 @@ or you can use your custom key function by key_func args,<br>
 the value will be your function return value.<br>
 
 ## How To Use:
+
+### Import
+```python
+from flask_api_cache import ApiCache
+```
 ### Cache Without Redis
 ```python
 @app.route('/')
@@ -55,10 +60,38 @@ def index(name, age):
     sex = request.args.get('sex', None, str)
     return f'{name} is a {age} years old {sex}.'
 ```
-If you request for **http://0.0.0.0:5600/Jimmy/18?sex=boy** ,<br>
+If you request for **http://0.0.0.0:5000/Jimmy/18?sex=boy** ,<br>
 it will set a 10 seconds cache by key: `Jimmy:18:boy`,<br>
                      with value: `Jimmy is a 18 years old boy.`,
 in your memory, it will be cleared after service restart.
+
+### [Sample Code](https://github.com/chienfeng0719/flask-api-cache/blob/develop/example.py)
+```python
+from flask import Flask, request
+from flask_api_cache import ApiCache
+
+app = Flask(__name__)
+
+
+def custom_func(**kwargs):
+    name = kwargs.get('name')
+    age = kwargs.get('age')
+    sex = kwargs.get('sex')
+    keys = f'{name}:{age}:{sex}'
+    return keys
+
+
+@app.route('/<string:name>/<int:age>')
+@ApiCache(key_func=custom_func, expired_time=10)
+def index(name, age):
+    sex = request.args.get('sex', None, str)
+    return f'{name} is a {age} years old {sex}.'
+
+
+if __name__ == '__main__':
+    app.run('0.0.0.0', port=5000)
+```
+
 
 ## Parameters
 

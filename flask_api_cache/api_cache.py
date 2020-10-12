@@ -14,6 +14,7 @@
         ┗┻┛    ┗┻┛
     God Bless,Never Bug
 """
+
 import json
 from flask import request, jsonify
 from flask.wrappers import Response
