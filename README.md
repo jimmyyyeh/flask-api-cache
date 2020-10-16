@@ -100,3 +100,8 @@ if __name__ == '__main__':
 |redis|no|if you want to caching data in redis, you can call ApiCache with a redis instance.|
 |expired_time|no|set your expired time with **seconds**, the default value is 24 * 60 * 60 seconds (1 day)|
 |key_func|no|the function which you want to make custom key|
+
+---
+<a href="https://www.buymeacoffee.com/jimmyyyeh" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" height="40" width="175"></a>
+
+**Buy me a coffee, if you like it!**
