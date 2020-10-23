@@ -43,7 +43,7 @@ class ApiCache:
                 return f'{name} is {age} years old.'
 
             If you request for『http://0.0.0.0:5000?name=Jimmy&age=18』,
-            it will set a data cache by key: 『name=Jimmy&age=18』,
+            it will set a data cache by key: 『index:/?name=Jimmy&age=18』,
                                  with value: 『Jimmy is 18 years old.』,
             in your redis instance.
         """
@@ -51,6 +51,8 @@ class ApiCache:
         self.key_func = key_func
         self.expired_time = expired_time
         self.func = None
+        self.jsonify = False
+        self.dict = False
         self._valid_redis()
 
     def __call__(self, func):
@@ -71,12 +73,14 @@ class ApiCache:
         except Exception as e:
             raise Exception('redis server not available')
 
-    def _get_redis_key(self):
+    def _get_data_key(self, **kwargs):
         """
-        generate redis key by function name and request full path
+        generate key by custom function or request full path
         """
         if self.key_func:
-            return self.key_func()
+            args = kwargs
+            args.update(request.args)
+            return self.key_func(**args)
         else:
             return f'{self.func.__name__}:{request.full_path}'
 
@@ -101,7 +105,7 @@ class ApiCache:
         def outer_wrapper(f):
             @wraps(f)
             def wrapper(*args, **kwargs):
-                return f()
+                return f(*args, **kwargs)
 
             # override signature
             sign = signature(f)
@@ -113,8 +117,8 @@ class ApiCache:
 
     def _cache_in_memory(self):
         @self._update_signature(signature(self.func).parameters.values())
-        def make_custom_key(*args):
-            return self._get_redis_key()
+        def make_custom_key(*args, **kwargs):
+            return self._get_data_key(**kwargs)
 
         f = cached(ttl=self.expired_time, custom_key_maker=make_custom_key)(self.func)
 
@@ -127,16 +131,23 @@ class ApiCache:
     def _cache_in_redis(self):
         @wraps(self.func)
         def wrapper(*args, **kwargs):
-            key = self._get_redis_key()
+            key = self._get_data_key(**kwargs)
             value = self._get_redis_value(key=key)
             if not value:
                 value = self.func(*args, **kwargs)
                 if isinstance(value, Response):
-                    value = json.dumps(value.json)
+                    self.jsonify = True
+                    self._set_redis_value(key=key, value=json.dumps(value.json))
+                elif isinstance(value, dict):
+                    self.jsonify = True
+                    self._set_redis_value(key=key, value=json.dumps(value))
                 else:
-                    value = json.dumps(value)
-                self._set_redis_value(key=key, value=value)
-            value = json.loads(value)
-            return jsonify(value)
+                    self._set_redis_value(key=key, value=json.dumps(value))
+            else:
+                if self.jsonify:
+                    value = jsonify(json.loads(value))
+                elif self.dict:
+                    value = json.loads(value)
+            return value
 
         return wrapper

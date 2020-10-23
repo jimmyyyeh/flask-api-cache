@@ -21,7 +21,7 @@ with open('README.md', 'r') as f:
 
 setuptools.setup(
     name='flask-api-cache',
-    version='0.0.8',
+    version='0.0.9',
     author='Jimmy Yeh',
     author_email='chienfeng0719@hotmail.com',
     description='A tool for flask api cache with args',
