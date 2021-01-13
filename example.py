@@ -21,7 +21,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-redis_instance = redis.StrictRedis(host='localhost', port=6379)
+redis_instance = redis.StrictRedis(host='redis', port=6379)
 
 
 def custom_func_1(**kwargs):
@@ -39,7 +39,10 @@ def custom_func_2(**kwargs):
     return keys
 
 
-@app.route('/example_1/<string:name>')
+"""GET"""
+
+
+@app.route('/example_1/<string:name>', methods=['GET'])
 @ApiCache(expired_time=10)
 def example_1(name):
     """
@@ -51,7 +54,7 @@ def example_1(name):
     return jsonify(f'Hi {name}, it is {datetime.now()}')
 
 
-@app.route('/example_2/<string:name>/<int:age>')
+@app.route('/example_2/<string:name>/<int:age>', methods=['GET'])
 @ApiCache(expired_time=10, key_func=custom_func_1)
 def example_2(name, age):
     """
@@ -65,7 +68,7 @@ def example_2(name, age):
     return jsonify(f'{name} is a {age} years old {sex}. {datetime.now()}')
 
 
-@app.route('/example_3/<string:items>')
+@app.route('/example_3/<string:items>', methods=['GET'])
 @ApiCache(redis=redis_instance, expired_time=10)
 def example_3(items):
     """
@@ -77,7 +80,7 @@ def example_3(items):
     return jsonify(f'You bought {items} at {datetime.now()}')
 
 
-@app.route('/example_4/<string:items>/<int:price>')
+@app.route('/example_4/<string:items>/<int:price>', methods=['GET'])
 @ApiCache(redis=redis_instance, key_func=custom_func_2, expired_time=10)
 def example_4(items, price):
     """
@@ -90,5 +93,71 @@ def example_4(items, price):
     return jsonify(f'You bought {items} at {datetime.now()}, it cost ${price}')
 
 
+"""POST / PUT / DELETE"""
+
+
+@app.route('/example_5/<string:name>', methods=['POST', 'PUT', 'DELETE'])
+@ApiCache(expired_time=10)
+def example_5(name):
+    """
+    caching data in memory with default key.
+        - http://0.0.0.0:5000/example_5/jimmy
+        - payload:
+            {
+                "items": "coffee",
+                "price": 18
+            }
+    :param name:
+    :return:
+    """
+    payload = request.json
+    result = dict()
+    result['payload'] = payload
+    result['greeting'] = f'Hi {name}, it is {datetime.now()}'
+    return jsonify(result)
+
+
+@app.route('/example_6/<string:name>', methods=['POST', 'PUT', 'DELETE'])
+@ApiCache(redis=redis_instance, expired_time=10)
+def example_6(name):
+    """
+    caching data in redis instance with default key.
+        - http://0.0.0.0:5000/example_6/jimmy
+        - payload:
+            {
+                "items": "coffee",
+                "price": 18
+            }
+    :param name:
+    :return:
+    """
+    payload = request.json
+    result = dict()
+    result['payload'] = payload
+    result['greeting'] = f'Hi {name}, it is {datetime.now()}'
+    return result
+
+
+@app.route('/example_7/<string:name>', methods=['POST', 'PUT', 'DELETE'])
+@ApiCache(redis=redis_instance, key_func=custom_func_2, expired_time=10)
+def example_7(name):
+    """
+    caching data in redis instance with custom function.
+        - http://0.0.0.0:5000/example_7/jimmy
+        - payload:
+            {
+                "items": "coffee",
+                "price": 18
+            }
+    :param name:
+    :return:
+    """
+    payload = request.json
+    result = dict()
+    result['payload'] = payload
+    result['greeting'] = f'Hi {name}, it is {datetime.now()}'
+    return result
+
+
 if __name__ == '__main__':
-    app.run('0.0.0.0', port=5000)
+    app.run('0.0.0.0', port=5000, debug=True)

@@ -62,6 +62,31 @@ class ApiCache:
         else:
             return self._cache_in_memory()
 
+    @staticmethod
+    def _set_params():
+        """
+        get request params or payload as dict
+        :return:
+        """
+        if request.method == 'GET':
+            return dict(request.args)
+        else:
+            return request.json or dict()
+
+    @staticmethod
+    def _set_query_string(params):
+        """
+        format sorted params dict as string, for example:
+        {
+            "age": 18,
+            "sex": "boy"
+        }
+        => age=18&sex=boy
+        :param params:
+        :return:
+        """
+        return '&'.join(f'{k}={v}' for k, v in sorted(params.items(), key=lambda x: x[0]))
+
     def _valid_redis(self):
         """
         check if redis service is available for connect
@@ -77,12 +102,14 @@ class ApiCache:
         """
         generate key by custom function or request full path
         """
+        params = self._set_params()
+        query_string = self._set_query_string(params=params)
         if self.key_func:
             args = kwargs
-            args.update(request.args)
+            args.update(params)
             return self.key_func(**args)
         else:
-            return f'{self.func.__name__}:{request.full_path}'
+            return f'{self.func.__name__}:{query_string}'
 
     def _get_redis_value(self, key):
         """
@@ -118,14 +145,14 @@ class ApiCache:
     def _cache_in_memory(self):
         @self._update_signature(signature(self.func).parameters.values())
         def make_custom_key(*args, **kwargs):
-            return self._get_data_key(**kwargs)
+            key = self._get_data_key(**kwargs)
+            return key
 
         f = cached(ttl=self.expired_time, custom_key_maker=make_custom_key)(self.func)
 
         @wraps(f)
         def wrapper(*args, **kwargs):
             return f(*args, **kwargs)
-
         return wrapper
 
     def _cache_in_redis(self):
@@ -139,7 +166,7 @@ class ApiCache:
                     self.jsonify = True
                     self._set_redis_value(key=key, value=json.dumps(value.json))
                 elif isinstance(value, dict):
-                    self.jsonify = True
+                    self.dict = True
                     self._set_redis_value(key=key, value=json.dumps(value))
                 else:
                     self._set_redis_value(key=key, value=json.dumps(value))
