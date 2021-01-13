@@ -1,0 +1,18 @@
+version: '3.5'
+services:
+  python:
+     build:
+       context: .
+     image: flask_api_cache
+     container_name: flask_api_cache
+     ports:
+       - "5000:5000"
+     env_file: .env
+     volumes:
+      - ./flask_api_cache:/app/flask_api_cache:rw
+      - ./example.py:/app/example.py:rw
+     tty: true
+  redis:
+    image: redis:5.0
+    command: ["redis-server", "--appendonly", "yes"]
+    container_name: redis
