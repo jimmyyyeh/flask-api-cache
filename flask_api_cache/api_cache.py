@@ -31,7 +31,7 @@ class ApiCache:
             A decorator for python flask api.
 
             You can set cache in your memory or with redis server,
-            the key will be generated default by the following rule: 『{YOUR_FUNCTION_NAME}:{REQUEST_FULL_PATH}』,
+            the key will be generated default by the following rule: 『{REQUEST_FULL_PATH}:{PARAMETER_STRING}』,
             or you can pass your custom key function by key_func args,
             the value will be your function return value.
         How To Use:
@@ -109,7 +109,7 @@ class ApiCache:
             args.update(params)
             return self.key_func(**args)
         else:
-            return f'{self.func.__name__}:{query_string}'
+            return f'{request.path}:{query_string}'
 
     def _get_redis_value(self, key):
         """
